@@ -98,14 +98,17 @@ void OnTimer()
 //+------------------------------------------------------------------+
 void BuildPanel()
   {
+//--- scale the layout by the screen DPI
    g_k   = TerminalInfoInteger(TERMINAL_SCREEN_DPI)/96.0;
    g_bar = S(g_barmax);
    int pad  = S(10);
    int rowH = S(InpFontSize + 14);
    g_w = S(46) + g_bar + S(70) + 2*pad;
    g_h = rowH*(g_n+1) + 2*pad;
+//--- panel background and title
    RectLabel(g_prefix+"BG",PX(0),PY(0),g_w,g_h,InpBgColor);
    TextLabel(g_prefix+"TITLE",PX(pad),PY(pad),"Currency Strength",InpTextColor);
+//--- one row per currency: name, bar and value
    for(int r=0;r<g_n;r++)
      {
       int y = pad + rowH*(r+1);
@@ -125,6 +128,7 @@ void Compute(double &str[])
    int cnt[];
    ArrayResize(cnt,g_n);
    ArrayInitialize(cnt,0);
+//--- accumulate the rate of change over every available pair
    for(int i=0;i<g_n;i++)
       for(int j=0;j<g_n;j++)
         {
@@ -139,6 +143,7 @@ void Compute(double &str[])
          str[i]+=chg; cnt[i]++;
          str[j]-=chg; cnt[j]++;
         }
+//--- average over the number of pairs found
    for(int i=0;i<g_n;i++)
       if(cnt[i]>0) str[i]/=cnt[i];
   }
@@ -149,7 +154,7 @@ void RefreshPanel()
   {
    double str[];
    Compute(str);
-
+//--- sort the currencies from strongest to weakest
    int idx[];
    ArrayResize(idx,g_n);
    for(int i=0;i<g_n;i++) idx[i]=i;
@@ -159,11 +164,11 @@ void RefreshPanel()
            {
             int t=idx[b]; idx[b]=idx[b+1]; idx[b+1]=t;
            }
-
+//--- largest absolute value sets the bar scale
    double maxabs=0.0001;
    for(int i=0;i<g_n;i++)
       if(MathAbs(str[i])>maxabs) maxabs=MathAbs(str[i]);
-
+//--- update the rows
    for(int r=0;r<g_n;r++)
      {
       int    ci  = idx[r];

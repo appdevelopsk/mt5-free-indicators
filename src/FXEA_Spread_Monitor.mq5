@@ -81,6 +81,7 @@ int OnCalculate(const int rates_total,const int prev_calculated,
                 const double &close[],const long &tick_volume[],
                 const long &volume[],const int &spread[])
   {
+//--- accumulate the spread for the average
    g_sumSpread += (double)SymbolInfoInteger(_Symbol,SYMBOL_SPREAD);
    g_count++;
    RefreshPanel();
@@ -98,13 +99,16 @@ void OnTimer()
 //+------------------------------------------------------------------+
 void BuildPanel()
   {
+//--- scale the layout by the screen DPI
    g_k = TerminalInfoInteger(TERMINAL_SCREEN_DPI)/96.0;
    int pad  = S(10);
    int rowH = S(InpFontSize + 12);
    g_w = S(250);
    g_h = rowH*(g_rows+1) + 2*pad;
+//--- panel background and title
    RectLabel(g_prefix+"BG",PX(0),PY(0),g_w,g_h,InpBgColor);
    TextLabel(g_prefix+"TITLE",PX(pad),PY(pad),"Spread Monitor",InpTextColor);
+//--- one row per value: label and value
    for(int i=0;i<g_rows;i++)
      {
       int y = pad + rowH*(i+1);
@@ -118,20 +122,22 @@ void BuildPanel()
 //+------------------------------------------------------------------+
 void RefreshPanel()
   {
+//--- current spread in points, pips and price
    long   spr      = SymbolInfoInteger(_Symbol,SYMBOL_SPREAD);
    double pip      = (_Digits==3 || _Digits==5) ? _Point*10.0 : _Point;
    double sprPips  = spr*_Point/pip;
    double sprPrice = spr*_Point;
+//--- spread cost of one lot in account currency
    double tickVal  = SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_VALUE);
    double tickSz   = SymbolInfoDouble(_Symbol,SYMBOL_TRADE_TICK_SIZE);
    double cost     = (tickSz>0) ? sprPrice/tickSz*tickVal : 0.0;
    double avgSpr   = (g_count>0) ? g_sumSpread/g_count : (double)spr;
    string cur      = AccountInfoString(ACCOUNT_CURRENCY);
-
+//--- update the rows
    SetValue(0,DoubleToString(sprPips,1)+" pips ("+(string)spr+" pt)",InpValueColor);
    SetValue(1,DoubleToString(avgSpr*_Point/pip,1)+" pips",InpValueColor);
    SetValue(2,DoubleToString(cost,2)+" "+cur,InpValueColor);
-
+//--- status line
    if(spr>InpWarnSpread) SetValue(3,"Wide",InpWarnColor);
    else                  SetValue(3,"Normal",  InpOkColor);
 

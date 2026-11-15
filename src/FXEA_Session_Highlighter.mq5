@@ -53,6 +53,7 @@ int OnCalculate(const int rates_total,const int prev_calculated,
                 const double &close[],const long &tick_volume[],
                 const long &volume[],const int &spread[])
   {
+//--- redraw only when a new bar appears
    static datetime lastbar = 0;
    if(prev_calculated>0 && time[rates_total-1]==lastbar)
       return(rates_total);
@@ -83,12 +84,13 @@ void DrawSessions()
 void DrawBox(string tag,int d,datetime day,int hStart,int hEnd,color clr)
   {
    if(hEnd<=hStart) return;
+//--- session time range
    datetime t1 = day + hStart*3600;
    datetime t2 = day + hEnd*3600;
    datetime now = TimeCurrent();
    if(t1>=now) return;                  // do not draw sessions that have not started yet
    if(t2>now)  t2 = now;
-
+//--- bars that belong to the session
    int b1 = iBarShift(_Symbol,PERIOD_CURRENT,t1,false);
    int b2 = iBarShift(_Symbol,PERIOD_CURRENT,t2,false);
    if(b1<0 || b2<0) return;
@@ -96,14 +98,14 @@ void DrawBox(string tag,int d,datetime day,int hStart,int hEnd,color clr)
    if(iTime(_Symbol,PERIOD_CURRENT,b1)<t1) b1--;     // skip a bar that opened before the session
    int count = b1 - b2 + 1;
    if(count<=0) return;
-
+//--- session high and low
    int hi = iHighest(_Symbol,PERIOD_CURRENT,MODE_HIGH,count,b2);
    int lo = iLowest(_Symbol,PERIOD_CURRENT,MODE_LOW,count,b2);
    if(hi<0 || lo<0) return;
    double pHigh = iHigh(_Symbol,PERIOD_CURRENT,hi);
    double pLow  = iLow(_Symbol,PERIOD_CURRENT,lo);
    if(pHigh<=0 || pLow<=0) return;
-
+//--- create or update the rectangle
    string name = g_prefix+tag+(string)d;
    if(ObjectFind(0,name)<0)
       ObjectCreate(0,name,OBJ_RECTANGLE,0,0,0,0,0);
