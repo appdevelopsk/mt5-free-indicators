@@ -26,7 +26,7 @@ input color             InpTextColor = clrWhiteSmoke;  // Text colour
 input color             InpBgColor   = clrBlack;       // Panel background colour
 
 string g_prefix = "FXEA_CSM_";
-string g_cur[]  = {"USD","EUR","GBP","JPY","AUD","NZD","CAD","CHF"};
+string g_cur[]  = {"EUR","GBP","AUD","NZD","USD","CAD","CHF","JPY"};   // market quoting order: the earlier currency is the base
 int    g_n      = 8;
 int    g_barmax = 110;
 int    g_bar    = 110;   // bar length in pixels after DPI scaling
@@ -128,11 +128,10 @@ void Compute(double &str[])
    int cnt[];
    ArrayResize(cnt,g_n);
    ArrayInitialize(cnt,0);
-//--- accumulate the rate of change over every available pair
+//--- accumulate the rate of change over the 28 standard pairs
    for(int i=0;i<g_n;i++)
-      for(int j=0;j<g_n;j++)
+      for(int j=i+1;j<g_n;j++)
         {
-         if(i==j) continue;
          string sym = g_cur[i]+g_cur[j]+InpSuffix;
          if(!SymbolSelect(sym,true)) continue;
          double c0[1],cN[1];
