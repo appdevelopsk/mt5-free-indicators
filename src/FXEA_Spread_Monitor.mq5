@@ -32,53 +32,72 @@ double g_k = 1.0;   // DPI scale (1.0 at 96 dpi)
 int    g_w = 0;     // panel width in pixels
 int    g_h = 0;     // panel height in pixels
 //+------------------------------------------------------------------+
-int S(int v) { return((int)MathRound(v*g_k)); }
-//--- panel-local coordinates -> distances from the selected chart corner
+//| Scale a pixel size by the screen DPI                             |
+//+------------------------------------------------------------------+
+int S(int v)
+  {
+   return((int)MathRound(v*g_k));
+  }
+//+------------------------------------------------------------------+
+//| Panel X coordinate to distance from the chart corner             |
+//+------------------------------------------------------------------+
 int PX(int lx)
-{
+  {
    bool right = (InpCorner==CORNER_RIGHT_UPPER || InpCorner==CORNER_RIGHT_LOWER);
    return(right ? S(InpX)+g_w-lx : S(InpX)+lx);
-}
+  }
+//+------------------------------------------------------------------+
+//| Panel Y coordinate to distance from the chart corner             |
+//+------------------------------------------------------------------+
 int PY(int ly)
-{
+  {
    bool lower = (InpCorner==CORNER_LEFT_LOWER || InpCorner==CORNER_RIGHT_LOWER);
    return(lower ? S(InpY)+g_h-ly : S(InpY)+ly);
-}
-
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 int OnInit()
-{
+  {
    BuildPanel();
    EventSetTimer(2);
    return(INIT_SUCCEEDED);
-}
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator deinitialization function                       |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
-{
+  {
    EventKillTimer();
    ObjectsDeleteAll(0,g_prefix);
    ChartRedraw();
-}
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
 int OnCalculate(const int rates_total,const int prev_calculated,
                 const datetime &time[],const double &open[],
                 const double &high[],const double &low[],
                 const double &close[],const long &tick_volume[],
                 const long &volume[],const int &spread[])
-{
+  {
    g_sumSpread += (double)SymbolInfoInteger(_Symbol,SYMBOL_SPREAD);
    g_count++;
    RefreshPanel();
    return(rates_total);
-}
+  }
+//+------------------------------------------------------------------+
+//| Timer function                                                   |
 //+------------------------------------------------------------------+
 void OnTimer()
-{
+  {
    RefreshPanel();
-}
+  }
+//+------------------------------------------------------------------+
+//| Create the panel objects                                         |
 //+------------------------------------------------------------------+
 void BuildPanel()
-{
+  {
    g_k = TerminalInfoInteger(TERMINAL_SCREEN_DPI)/96.0;
    int pad  = S(10);
    int rowH = S(InpFontSize + 12);
@@ -87,16 +106,18 @@ void BuildPanel()
    RectLabel(g_prefix+"BG",PX(0),PY(0),g_w,g_h,InpBgColor);
    TextLabel(g_prefix+"TITLE",PX(pad),PY(pad),"Spread Monitor",InpTextColor);
    for(int i=0;i<g_rows;i++)
-   {
+     {
       int y = pad + rowH*(i+1);
       TextLabel(g_prefix+"L"+(string)i,PX(pad),PY(y),g_labels[i],InpTextColor);
       TextLabel(g_prefix+"V"+(string)i,PX(pad+S(120)),PY(y),"-",InpValueColor);
-   }
+     }
    RefreshPanel();
-}
+  }
+//+------------------------------------------------------------------+
+//| Recalculate and redraw the panel values                          |
 //+------------------------------------------------------------------+
 void RefreshPanel()
-{
+  {
    long   spr      = SymbolInfoInteger(_Symbol,SYMBOL_SPREAD);
    double pip      = (_Digits==3 || _Digits==5) ? _Point*10.0 : _Point;
    double sprPips  = spr*_Point/pip;
@@ -115,17 +136,21 @@ void RefreshPanel()
    else                  SetValue(3,"Normal",  InpOkColor);
 
    ChartRedraw();
-}
+  }
+//+------------------------------------------------------------------+
+//| Set the text and colour of a value label                         |
 //+------------------------------------------------------------------+
 void SetValue(int row,string text,color clr)
-{
+  {
    string name = g_prefix+"V"+(string)row;
    ObjectSetString (0,name,OBJPROP_TEXT,text);
    ObjectSetInteger(0,name,OBJPROP_COLOR,clr);
-}
+  }
+//+------------------------------------------------------------------+
+//| Create or update a text label                                    |
 //+------------------------------------------------------------------+
 void TextLabel(string name,int x,int y,string text,color clr)
-{
+  {
    if(ObjectFind(0,name)<0)
       ObjectCreate(0,name,OBJ_LABEL,0,0,0);
    ObjectSetInteger(0,name,OBJPROP_CORNER,InpCorner);
@@ -137,10 +162,12 @@ void TextLabel(string name,int x,int y,string text,color clr)
    ObjectSetString(0,name,OBJPROP_TEXT,text);
    ObjectSetInteger(0,name,OBJPROP_SELECTABLE,false);
    ObjectSetInteger(0,name,OBJPROP_HIDDEN,true);
-}
+  }
+//+------------------------------------------------------------------+
+//| Create or update the panel background                            |
 //+------------------------------------------------------------------+
 void RectLabel(string name,int x,int y,int w,int h,color bg)
-{
+  {
    if(ObjectFind(0,name)<0)
       ObjectCreate(0,name,OBJ_RECTANGLE_LABEL,0,0,0);
    ObjectSetInteger(0,name,OBJPROP_CORNER,InpCorner);
@@ -154,5 +181,5 @@ void RectLabel(string name,int x,int y,int w,int h,color bg)
    ObjectSetInteger(0,name,OBJPROP_BACK,false);
    ObjectSetInteger(0,name,OBJPROP_SELECTABLE,false);
    ObjectSetInteger(0,name,OBJPROP_HIDDEN,true);
-}
+  }
 //+------------------------------------------------------------------+

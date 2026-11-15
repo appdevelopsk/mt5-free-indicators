@@ -34,51 +34,70 @@ double g_k = 1.0;   // DPI scale (1.0 at 96 dpi)
 int    g_w = 0;     // panel width in pixels
 int    g_h = 0;     // panel height in pixels
 //+------------------------------------------------------------------+
-int S(int v) { return((int)MathRound(v*g_k)); }
-//--- panel-local coordinates -> distances from the selected chart corner
+//| Scale a pixel size by the screen DPI                             |
+//+------------------------------------------------------------------+
+int S(int v)
+  {
+   return((int)MathRound(v*g_k));
+  }
+//+------------------------------------------------------------------+
+//| Panel X coordinate to distance from the chart corner             |
+//+------------------------------------------------------------------+
 int PX(int lx)
-{
+  {
    bool right = (InpCorner==CORNER_RIGHT_UPPER || InpCorner==CORNER_RIGHT_LOWER);
    return(right ? S(InpX)+g_w-lx : S(InpX)+lx);
-}
+  }
+//+------------------------------------------------------------------+
+//| Panel Y coordinate to distance from the chart corner             |
+//+------------------------------------------------------------------+
 int PY(int ly)
-{
+  {
    bool lower = (InpCorner==CORNER_LEFT_LOWER || InpCorner==CORNER_RIGHT_LOWER);
    return(lower ? S(InpY)+g_h-ly : S(InpY)+ly);
-}
-
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 int OnInit()
-{
+  {
    BuildPanel();
    EventSetTimer(10);
    return(INIT_SUCCEEDED);
-}
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator deinitialization function                       |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
-{
+  {
    EventKillTimer();
    ObjectsDeleteAll(0,g_prefix);
    ChartRedraw();
-}
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
 int OnCalculate(const int rates_total,const int prev_calculated,
                 const datetime &time[],const double &open[],
                 const double &high[],const double &low[],
                 const double &close[],const long &tick_volume[],
                 const long &volume[],const int &spread[])
-{
+  {
    RefreshPanel();
    return(rates_total);
-}
+  }
+//+------------------------------------------------------------------+
+//| Timer function                                                   |
 //+------------------------------------------------------------------+
 void OnTimer()
-{
+  {
    RefreshPanel();
-}
+  }
+//+------------------------------------------------------------------+
+//| Create the panel objects                                         |
 //+------------------------------------------------------------------+
 void BuildPanel()
-{
+  {
    g_k   = TerminalInfoInteger(TERMINAL_SCREEN_DPI)/96.0;
    g_bar = S(g_barmax);
    int pad  = S(10);
@@ -88,17 +107,19 @@ void BuildPanel()
    RectLabel(g_prefix+"BG",PX(0),PY(0),g_w,g_h,InpBgColor);
    TextLabel(g_prefix+"TITLE",PX(pad),PY(pad),"Currency Strength",InpTextColor);
    for(int r=0;r<g_n;r++)
-   {
+     {
       int y = pad + rowH*(r+1);
       TextLabel(g_prefix+"C"+(string)r,PX(pad),PY(y),"-",InpTextColor);
       BarLabel (g_prefix+"B"+(string)r,PX(pad+S(46)),PY(y+S(3)),1,S(InpFontSize),InpUpColor);
       TextLabel(g_prefix+"V"+(string)r,PX(pad+S(46)+g_bar+S(8)),PY(y),"-",InpTextColor);
-   }
+     }
    RefreshPanel();
-}
+  }
+//+------------------------------------------------------------------+
+//| Calculate the strength of each currency                          |
 //+------------------------------------------------------------------+
 void Compute(double &str[])
-{
+  {
    ArrayResize(str,g_n);
    ArrayInitialize(str,0.0);
    int cnt[];
@@ -106,7 +127,7 @@ void Compute(double &str[])
    ArrayInitialize(cnt,0);
    for(int i=0;i<g_n;i++)
       for(int j=0;j<g_n;j++)
-      {
+        {
          if(i==j) continue;
          string sym = g_cur[i]+g_cur[j]+InpSuffix;
          if(!SymbolSelect(sym,true)) continue;
@@ -117,13 +138,15 @@ void Compute(double &str[])
          double chg = (c0[0]-cN[0])/cN[0]*100.0;
          str[i]+=chg; cnt[i]++;
          str[j]-=chg; cnt[j]++;
-      }
+        }
    for(int i=0;i<g_n;i++)
       if(cnt[i]>0) str[i]/=cnt[i];
-}
+  }
+//+------------------------------------------------------------------+
+//| Recalculate and redraw the panel values                          |
 //+------------------------------------------------------------------+
 void RefreshPanel()
-{
+  {
    double str[];
    Compute(str);
 
@@ -133,16 +156,16 @@ void RefreshPanel()
    for(int a=0;a<g_n-1;a++)
       for(int b=0;b<g_n-1-a;b++)
          if(str[idx[b]]<str[idx[b+1]])
-         {
+           {
             int t=idx[b]; idx[b]=idx[b+1]; idx[b+1]=t;
-         }
+           }
 
    double maxabs=0.0001;
    for(int i=0;i<g_n;i++)
       if(MathAbs(str[i])>maxabs) maxabs=MathAbs(str[i]);
 
    for(int r=0;r<g_n;r++)
-   {
+     {
       int    ci  = idx[r];
       double v   = str[ci];
       color  c   = (v>=0.0) ? InpUpColor : InpDownColor;
@@ -155,12 +178,14 @@ void RefreshPanel()
       ObjectSetInteger(0,g_prefix+"B"+(string)r,OBJPROP_XSIZE,w);
       ObjectSetInteger(0,g_prefix+"B"+(string)r,OBJPROP_BGCOLOR,c);
       ObjectSetInteger(0,g_prefix+"B"+(string)r,OBJPROP_COLOR,c);
-   }
+     }
    ChartRedraw();
-}
+  }
+//+------------------------------------------------------------------+
+//| Create or update a text label                                    |
 //+------------------------------------------------------------------+
 void TextLabel(string name,int x,int y,string text,color clr)
-{
+  {
    if(ObjectFind(0,name)<0)
       ObjectCreate(0,name,OBJ_LABEL,0,0,0);
    ObjectSetInteger(0,name,OBJPROP_CORNER,InpCorner);
@@ -172,10 +197,12 @@ void TextLabel(string name,int x,int y,string text,color clr)
    ObjectSetString(0,name,OBJPROP_TEXT,text);
    ObjectSetInteger(0,name,OBJPROP_SELECTABLE,false);
    ObjectSetInteger(0,name,OBJPROP_HIDDEN,true);
-}
+  }
+//+------------------------------------------------------------------+
+//| Create or update a strength bar                                  |
 //+------------------------------------------------------------------+
 void BarLabel(string name,int x,int y,int w,int h,color bg)
-{
+  {
    if(ObjectFind(0,name)<0)
       ObjectCreate(0,name,OBJ_RECTANGLE_LABEL,0,0,0);
    ObjectSetInteger(0,name,OBJPROP_CORNER,InpCorner);
@@ -189,10 +216,12 @@ void BarLabel(string name,int x,int y,int w,int h,color bg)
    ObjectSetInteger(0,name,OBJPROP_BACK,false);
    ObjectSetInteger(0,name,OBJPROP_SELECTABLE,false);
    ObjectSetInteger(0,name,OBJPROP_HIDDEN,true);
-}
+  }
+//+------------------------------------------------------------------+
+//| Create or update the panel background                            |
 //+------------------------------------------------------------------+
 void RectLabel(string name,int x,int y,int w,int h,color bg)
-{
+  {
    if(ObjectFind(0,name)<0)
       ObjectCreate(0,name,OBJ_RECTANGLE_LABEL,0,0,0);
    ObjectSetInteger(0,name,OBJPROP_CORNER,InpCorner);
@@ -206,5 +235,5 @@ void RectLabel(string name,int x,int y,int w,int h,color bg)
    ObjectSetInteger(0,name,OBJPROP_BACK,false);
    ObjectSetInteger(0,name,OBJPROP_SELECTABLE,false);
    ObjectSetInteger(0,name,OBJPROP_HIDDEN,true);
-}
+  }
 //+------------------------------------------------------------------+

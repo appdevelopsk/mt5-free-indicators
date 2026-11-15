@@ -29,50 +29,59 @@ input color InpNYColor     = clrIndianRed;  // New York session colour
 input bool  InpFill        = true;          // Fill the box
 
 string g_prefix = "FXEA_SESS_";
-
+//+------------------------------------------------------------------+
+//| Custom indicator initialization function                         |
 //+------------------------------------------------------------------+
 int OnInit()
-{
+  {
    return(INIT_SUCCEEDED);
-}
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator deinitialization function                       |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
-{
+  {
    ObjectsDeleteAll(0,g_prefix);
    ChartRedraw();
-}
+  }
+//+------------------------------------------------------------------+
+//| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
 int OnCalculate(const int rates_total,const int prev_calculated,
                 const datetime &time[],const double &open[],
                 const double &high[],const double &low[],
                 const double &close[],const long &tick_volume[],
                 const long &volume[],const int &spread[])
-{
+  {
    static datetime lastbar = 0;
    if(prev_calculated>0 && time[rates_total-1]==lastbar)
       return(rates_total);
    lastbar = time[rates_total-1];
    DrawSessions();
    return(rates_total);
-}
+  }
+//+------------------------------------------------------------------+
+//| Redraw all session boxes                                         |
 //+------------------------------------------------------------------+
 void DrawSessions()
-{
+  {
    ObjectsDeleteAll(0,g_prefix);
    datetime now   = TimeCurrent();
    datetime today = (datetime)((now/86400)*86400);   // server-time midnight of today
    for(int d=0; d<InpDaysBack; d++)
-   {
+     {
       datetime day = today - d*86400;
       if(InpShowTokyo)  DrawBox("T",d,day,InpTokyoStart, InpTokyoEnd, InpTokyoColor);
       if(InpShowLondon) DrawBox("L",d,day,InpLondonStart,InpLondonEnd,InpLondonColor);
       if(InpShowNY)     DrawBox("N",d,day,InpNYStart,    InpNYEnd,    InpNYColor);
-   }
+     }
    ChartRedraw();
-}
+  }
+//+------------------------------------------------------------------+
+//| Draw one session box for the given day                           |
 //+------------------------------------------------------------------+
 void DrawBox(string tag,int d,datetime day,int hStart,int hEnd,color clr)
-{
+  {
    if(hEnd<=hStart) return;
    datetime t1 = day + hStart*3600;
    datetime t2 = day + hEnd*3600;
@@ -107,5 +116,5 @@ void DrawBox(string tag,int d,datetime day,int hStart,int hEnd,color clr)
    ObjectSetInteger(0,name,OBJPROP_BACK,true);
    ObjectSetInteger(0,name,OBJPROP_SELECTABLE,false);
    ObjectSetInteger(0,name,OBJPROP_HIDDEN,true);
-}
+  }
 //+------------------------------------------------------------------+
